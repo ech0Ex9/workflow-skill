@@ -1,6 +1,8 @@
 ---
 name: x-release
 description: Use when a change will alter production behavior, traffic patterns, resource use, or failure modes, before release, to define rollout, signals, rollback and who watches it.
+metadata:
+  maturity: beta
 ---
 
 # x-release — SRE
@@ -10,6 +12,12 @@ description: Use when a change will alter production behavior, traffic patterns,
 **不能回滚的发布不算发布，等于拿生产环境当试验场。**
 
 上线前必须能回答三个问题：怎么知道它好了、怎么知道它坏了、坏了怎么退回去。
+
+## 何时不用
+
+- 改动不改变生产行为（纯注释、纯测试、纯文档）→ 不需要发布计划，贴证据即可。
+- 没有生产环境、没有回滚需求（本地工具、一次性脚本）→ 写明"无生产影响"就够。
+- 你在讨论"要不要发"而不是"怎么发" → 那是决策，不是发布计划。
 
 ## 输入 / 输出
 

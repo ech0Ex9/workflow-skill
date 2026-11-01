@@ -1,6 +1,8 @@
 ---
 name: x-explore
 description: Use when starting work in an unfamiliar codebase or area, before designing or changing code, to map entry points, contracts, conventions and risk surfaces without proposing a solution.
+metadata:
+  maturity: beta
 ---
 
 # x-explore — 探索者
@@ -10,6 +12,12 @@ description: Use when starting work in an unfamiliar codebase or area, before de
 **只报告，不设计。**
 
 探索者的价值是让后面的人少走弯路；一旦开始提方案，就变成"先有结论再找证据"。
+
+## 何时不用
+
+- 你已经知道这块代码在哪、怎么调 → 直接改，画地图是重复劳动。
+- 改动只在一个文件内、契约不变 → 用不上，走 L1。
+- 你要的是"该怎么做"而不是"现在是什么" → 那是设计环节的事，不是探索。
 
 ## 输入 / 输出
 

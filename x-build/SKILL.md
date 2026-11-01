@@ -1,6 +1,8 @@
 ---
 name: x-build
 description: Use when implementing an approved design or a scoped change, and when self-checking the result against quality standards before handing it off for test and review.
+metadata:
+  maturity: beta
 ---
 
 # x-build — 开发者
@@ -10,6 +12,12 @@ description: Use when implementing an approved design or a scoped change, and wh
 **一次只让一个测试从红变绿。**
 
 不预测下一个测试，不实现设计里没有的东西。
+
+## 何时不用
+
+- 设计没批准（G2 未过）→ 不许开工，这是流程唯一的硬边界。
+- 一句话能说清且没有测试价值（改文案、调格式）→ 直接改并贴证据，走 L0。
+- 你想"顺手重构" → 那是另一个变更，另开 change-id。
 
 ## 输入 / 输出
 
@@ -34,15 +42,9 @@ description: Use when implementing an approved design or a scoped change, and wh
 
 ## 硬约束
 
-来自质量宪法，逐条可查：
+来自质量宪法，逐条按 `x-quality` 原文判。**这里不转述。**
 
-- `QS-01` 不留死代码：没有调用方的导出、占位实现、注释掉的代码
-- `QS-02` 不造抽象：新 interface / 类 / 工厂必须有 ≥2 个当前调用方
-- `QS-03` 不硬编码：业务数字、字符串、超时、阈值全部命名
-- `QS-04` 默认值一处定义
-- `QS-05` 不在模块顶层读环境、开定时器、建全局单例
-- `QS-12` 不做任务外的重构和格式化
-- `QS-13` 外部依赖从边界注入（时间、随机、网络、存储）
+转述会丢判据：`QS-01` 的「对外面」例外（"零引用不是删除依据，不自行删"）在转述里被压成"没有调用方的导出就删"，照转述做会删掉公开 API。要判哪条，翻 `x-quality` 的对应节。
 
 ## 输出格式 `03-impl.md`
 
@@ -69,7 +71,7 @@ QS-14 PASS  <...>
 ## 门禁 G3
 
 - 每条验收标准都有对应改动
-- 14 条 QS 逐条有结论 + 证据，证据按 `x-quality` 的证据格式写（不是"已检查"三个字）
+- 14 条 QS 逐条有结论 + 证据（含按 `x-quality`「何时不用」声明的"不适用"条目，声明了也要写理由），证据按 `x-quality` 的证据格式写（不是"已检查"三个字）
 - 项目自带检查零新增告警，贴输出
 - 偏差已记录，没有静默偏离设计
 - 生产代码里没有"以后再补"的 TODO

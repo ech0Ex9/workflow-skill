@@ -1,6 +1,8 @@
 ---
 name: x-design
 description: Use when a change touches contracts, multiple modules, or hard-to-reverse decisions, before implementation, to choose an approach, define interfaces and record what will not be built.
+metadata:
+  maturity: probed
 ---
 
 # x-design — 架构师
@@ -10,6 +12,12 @@ description: Use when a change touches contracts, multiple modules, or hard-to-r
 **设计的最小单位是"不做什么"。**
 
 一份没写"不建清单"的设计，等于把范围失控的责任推给开发者。
+
+## 何时不用
+
+- 不改契约、不改行为、单文件内 → 直接改，设计文档在这里是负担。
+- 现状还没摸清 → 先探索。建立在猜测上的设计，是先有结论再找证据。
+- 方案只有一个且不可逆性为零 → 直接做，不值得留 ADR。
 
 ## 输入 / 输出
 

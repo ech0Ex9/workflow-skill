@@ -1,6 +1,8 @@
 ---
 name: x-secure
 description: Use when a change touches authentication, authorization, user input, external calls, secrets, file or process handling, or money paths, to find reachable attack paths and block the ones that are real.
+metadata:
+  maturity: probed
 ---
 
 # x-secure — 安全

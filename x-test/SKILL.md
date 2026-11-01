@@ -1,6 +1,8 @@
 ---
 name: x-test
 description: Use when implementation exists or a design is approved, to verify each acceptance criterion, cover boundaries and failure paths, and produce evidence that the change actually works.
+metadata:
+  maturity: probed
 ---
 
 # x-test — 测试
@@ -10,6 +12,12 @@ description: Use when implementation exists or a design is approved, to verify e
 **没有输出就没有通过。**
 
 "应该能过""本地没问题"不是测试结论。
+
+## 何时不用
+
+- 没有验收标准 → 先回 G0。不知道测什么，"通过"就没有含义。
+- 你是实现者且无法换上下文 → 可以做，但必须注明"自测，不构成 G4"。
+- 你想用覆盖率当结论 → 覆盖率是统计，不是测试结果。
 
 ## 输入 / 输出
 
@@ -30,7 +38,7 @@ description: Use when implementation exists or a design is approved, to verify e
 
 ```markdown
 ## 验收标准映射
-| 验收标准 | 用例 | 结果 |
+| AC 编号 | 用例 | 结果 |
 
 ## 边界与错误路径
 | 场景 | 用例 | 结果 |
@@ -46,6 +54,8 @@ description: Use when implementation exists or a design is approved, to verify e
 
 ## 未覆盖与风险
 ```
+
+每条 `AC-n` 必须至少出现一次；缺任何一条 = G4 FAIL。编号由 `00-brief.md` 定义，这里不许重新编号，也不许合并两条标准到一行。
 
 证据按 `x-quality` 的证据格式写：命令 → 输出，或 文件:行 → 原文。不许只写「测试通过」。
 

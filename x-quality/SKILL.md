@@ -1,6 +1,8 @@
 ---
 name: x-quality
 description: Use when writing, reviewing, or accepting code - before handing off implementation, before approving a merge - or when code smells of dead code, speculative abstraction, hardcoded values, hidden global state, or swallowed errors.
+metadata:
+  maturity: probed
 ---
 
 # x-quality — 代码质量宪法
@@ -9,7 +11,13 @@ description: Use when writing, reviewing, or accepting code - before handing off
 
 **每一行代码都要有一个当前存在的理由。** 说不出理由的代码，删掉比留下便宜。
 
-这份标准是**同一份**：developer 用它自检，reviewer 用它复核，tester 用它判断可测性。标准不一致 = 没有标准。
+这份标准是**同一份**：写的人用它自检，审的人用它复核，测的人用它判断可测性。标准不一致 = 没有标准。
+
+## 何时不用
+
+- 你在评估架构（接缝、抽象层次、职责划分）→ 不归这份标准管，它只管单点代码。
+- 你在做威胁建模或可达性分析 → 不归这份标准管。
+- 项目是原型或一次性脚本、明确不打算维护 → 说明"不适用"，不要硬套 14 条。
 
 ## 两层判定
 
