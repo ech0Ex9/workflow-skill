@@ -4,7 +4,7 @@
 
 ## 为什么需要它
 
-9 个 skill 共享一批定义：证据格式、结论优先、门禁 ID、产物名、QS 编号。这些定义**只能有一处真相，其余全是引用**。
+10 个 skill 共享一批定义：证据格式、结论优先、门禁 ID、产物名、QS 编号、汇报必答序列。这些定义**只能有一处真相，其余全是引用**。
 
 改一处不改其余 = 同一套规则出现两个版本，门禁当场失效。
 
@@ -24,6 +24,7 @@
 | I-10 | `metadata.maturity` 只有 `probed` / `beta` 两个值；标 `beta` 的集合必须与 README「已知的待验证项」里那句声明**完全相等**（多一个少一个都算错） | 各自 | 全部 |
 | I-11 | 验收标准编号只有 `AC-n`，由 `00-brief.md` 定义 | `x-workflow`「交接物契约」 | `x-workflow` / `x-test` / `scripts/gate-check.py` |
 | I-12 | `x-ask` 是通用工具：不许引用任何角色名、产物名、门禁 ID | — | `x-ask` |
+| I-13 | `x-report` 是通用工具：不许引用任何角色名、产物名、门禁 ID；**汇报必答序列只在 `x-report` 定义**，其他 skill 只许引用，不许自己列结构模板（`SCQA` / `PREP` / `STAR` / 金字塔） | `x-report`「判断入口」 | 全部 skill 引用，**不许重新定义** |
 
 ## 二、依赖方向（单向，不许反向）
 
@@ -33,10 +34,13 @@
 | 6 个角色 | `x-quality` + 自己的上下游产物 |
 | `x-quality` | **任何角色都不许引用** |
 | `x-ask` | 只许引用 `x-quality` |
+| `x-report` | 只许引用 `x-quality` |
 
 理由：`x-quality` 是尺子。尺子一旦认识某个角色，就不能被别的角色用。
 
 同一条理由适用于 `x-ask`：它是通用工具。工具一旦知道自己在哪条链路里、产物叫什么、门禁编号是几，就只能在那条链路里用，而且链路一改名它就断。
+
+`x-report` 同理：它按「读者要做的决定」查表，不按场景名，也不认识角色和产物——否则换一个团队、换一套产物命名，就得重写一遍。
 
 角色之间也不许互相引用职责（"这个交给 x-secure 判断"可以，"x-secure 应该做 X"不行）。
 
@@ -54,6 +58,7 @@
 | skill 改名 | 目录名 + frontmatter `name` + 全仓库交叉引用 + README 树 + 第二节依赖矩阵 |
 | 新增 skill | 职责是否与第四节的「独占职责」重叠 + 是否进链路图 + 是否占产物编号 + frontmatter 是否有 `metadata.maturity` |
 | `maturity` 标注 | 该 skill 的 frontmatter + README 结构树 + README「已知的待验证项」+ 第五节校验 |
+| 汇报必答序列 | `x-report` 判断入口表 + 5 个引用它的角色 skill + README 调用关系图 + 第五节校验 |
 | 验收标准编号（`AC-n`） | `x-workflow` 交接物契约 + `x-test` 输出格式 + `scripts/gate-check.py` 的 G4 判据 + `scripts/selftest-gate-check.sh` 的 fixture |
 | 角色边界 | 上下游的「输入 / 输出」是否还对得上 |
 
@@ -70,6 +75,7 @@
 | `x-secure` | 信任边界、入口枚举、按可达性定级、攻击路径 | 不报无路径的"可能存在风险"、不对线上做破坏性验证 |
 | `x-release` | 影响面、放大效应、信号、发布策略、回滚、runbook | 不用"部署步骤"代替回滚、不用"观察一下"代替阈值 |
 | `x-ask` | 把模糊输入问成四问答案（要什么 / 怎么算完 / 不做什么 / 多大），答不上的标 `未验证` | 不查事实、不设计方案、不判规模、不写产物文件 |
+| `x-report` | 按读者要做的决定定必答序列，缺一问即未完成 | 不定义证据格式、不判质量、不代替产物文件 |
 
 **新增 skill 前先对照**：它要做的事是否已被某一行的「独占职责」覆盖？是 → 不该新增 skill，应该是那个 skill 的一条规则。
 
@@ -124,6 +130,16 @@ for x in ('00-brief', '01-explore', '02-design', '03-impl', '04-test', '05-secur
     if x in a:                                   fail.append(f'I-12 x-ask 引用了产物 {x}')
 gb = sorted(set(re.findall(r'\bG[0-6]\b', a)))
 if gb:                                           fail.append(f'I-12 x-ask 引用了门禁 {gb}')
+rp = open('x-report/SKILL.md', encoding='utf-8').read()
+for o in names:
+    if o not in ('x-quality', 'x-report') and o in rp:
+        fail.append(f'I-13 x-report 引用了 {o}')
+for d in names:
+    if d == 'x-report':                          continue
+    t = open(f'{d}/SKILL.md', encoding='utf-8').read()
+    hit = sorted(set(re.findall(r'\b(?:SCQA|PREP|STAR|MECE)\b', t)))
+    if '\u91d1\u5b57\u5854' in t:                hit.append('\u91d1\u5b57\u5854')
+    if hit:                                      fail.append(f'I-13 {d} 重复定义汇报结构 {hit}')
 r = open('README.md', encoding='utf-8').read()
 pend = r.split('## \u5df2\u77e5\u7684\u5f85\u9a8c\u8bc1\u9879')[-1]
 decl = re.search(r'\u6807 `beta` \u7684\u5c31\u662f (.+?)\uff0c', pend)

@@ -2,7 +2,7 @@
 name: x-release
 description: Use when a change will alter production behavior, traffic patterns, resource use, or failure modes, before release, to define rollout, signals, rollback and who watches it.
 metadata:
-  maturity: beta
+  maturity: probed
 ---
 
 # x-release — SRE
@@ -40,6 +40,9 @@ metadata:
 ## 输出格式 `06-release.md`
 
 ```markdown
+## 结论
+<发 / 不发 / 分阶段；一句话，先给这个>
+
 ## 影响面
 | 路径 | 流量比例 | 受影响用户 | 外部依赖 |
 
@@ -71,6 +74,8 @@ metadata:
 证据统一按 `x-quality` 的证据格式写。**流量比例、峰值、配额这些数字，拿不到就写「未验证：缺什么」，不许估一个看起来合理的数。**
 
 按「结论优先」写：影响面、放大效应、回滚结论先给，排查过程不写。回滚步骤和 Runbook 是交付物，逐步写全。
+
+这份产物要让人决定「发 / 不发 / 回滚」，按 `x-report` 的对应必答序列组织：结论 → 影响面 → 回滚 → 信号（残余风险与检测），缺一问不算完成。
 
 ## 门禁 G6
 
