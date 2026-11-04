@@ -59,6 +59,7 @@
 | 新增 skill | 职责是否与第四节的「独占职责」重叠 + 是否进链路图 + 是否占产物编号 + frontmatter 是否有 `metadata.maturity` |
 | `maturity` 标注 | 该 skill 的 frontmatter + README 结构树 + README「已知的待验证项」+ 第五节校验 |
 | 汇报必答序列 | `x-report` 判断入口表 + 5 个引用它的角色 skill + README 调用关系图 + 第五节校验 |
+| 呈现规则（矩阵） | `x-report`「呈现：矩阵」+ `x-release` / `x-secure` 的表格指针 + README 结构树 |
 | 验收标准编号（`AC-n`） | `x-workflow` 交接物契约 + `x-test` 输出格式 + `scripts/gate-check.py` 的 G4 判据 + `scripts/selftest-gate-check.sh` 的 fixture |
 | 角色边界 | 上下游的「输入 / 输出」是否还对得上 |
 
