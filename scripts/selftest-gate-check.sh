@@ -18,8 +18,16 @@ fi
 
 # ---------- 夹具：一份完整、正确的 .engineering/<change-id>/ ----------
 
+# write_brief <dir> [with_window=yes] [grade=L2 跨模块] [extra]
+#   with_window=no  → 造「L2/L3 缺变更窗口」用例
+#   grade=L0 微改   → 配合 extra 造「L0 缺复核人 / 缺定级理由」用例
 write_brief() {
-  cat > "$1/00-brief.md" <<'EOF'
+  local dir="$1"
+  local with_window="${2:-yes}"
+  local grade="${3:-L2 跨模块}"
+  local extra="${4:-}"
+  {
+    cat <<'EOF'
 produced-by: s-00
 ## 目标
 给订单接口加超时，作用在报价调用上。
@@ -31,9 +39,15 @@ produced-by: s-00
 ## 不做什么
 - 不做重试，不做熔断，不改接口契约
 
-## 分级
-L2 跨模块
 EOF
+    printf '## 分级\n%s\n\n' "$grade"
+    if [ "$with_window" = "yes" ]; then
+      printf '## 变更窗口\n2026-11-06 02:00–04:00 UTC，无 freeze\n\n'
+    fi
+    if [ -n "$extra" ]; then
+      printf '%s\n' "$extra"
+    fi
+  } > "$dir/00-brief.md"
 }
 
 write_explore() {
@@ -43,7 +57,7 @@ produced-by: s-01
 - 入口 src/order.py:42 → resp = fetch_quote()
 
 ## 未知
-- UNKNOWN: 上游 p99 延迟
+- 未验证：上游 p99 延迟
 EOF
 }
 
@@ -266,6 +280,25 @@ C9="$TMP/c9"
 cp -R "$BASE" "$C9"
 rewrite_produced_by "$C9/.engineering/demo/03-impl.md" s-02
 run_case dup-produced-by 1 "$C9/.engineering/demo" 'FAIL PRODUCED-BY: 01/02/03'
+
+# 10. 03/04 共用同一个 session id → 自审不算（写代码的人不能自己测）拦
+C10="$TMP/c10"
+cp -R "$BASE" "$C10"
+rewrite_produced_by "$C10/.engineering/demo/04-test.md" s-03
+run_case selfreview-produced-by 1 "$C10/.engineering/demo" 'FAIL PRODUCED-BY: 03/04'
+
+# 11. L2 却没写变更窗口 → G0 拦（窗口必须在定级时锁）
+C11="$TMP/c11"
+cp -R "$BASE" "$C11"
+write_brief "$C11/.engineering/demo" no
+run_case no-window 1 "$C11/.engineering/demo" 'FAIL G0: L2/L3 缺 ## 变更窗口'
+
+# 12. L0 写了定级理由但没有复核人 → G0 拦（豁免口必须有第二个人看）
+C12="$TMP/c12"
+cp -R "$BASE" "$C12"
+write_brief "$C12/.engineering/demo" no 'L0 微改' '## 定级理由
+只改一处 typo，不改行为、不改契约。'
+run_case l0-no-reviewer 1 "$C12/.engineering/demo" 'FAIL G0: L0 缺 ## 复核人'
 
 # ---------- 汇总 ----------
 

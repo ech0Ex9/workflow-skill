@@ -6,7 +6,7 @@
 
 ```
 workflow-skill/
-├── x-workflow/ 编排入口：变更分级 + 7 道门禁 + 交接物契约   beta
+├── x-workflow/ 编排入口：变更分级 + 7 道门禁 + 交接物契约
 ├── x-quality/  质量宪法：QS-01..QS-14，dev 自检与 review 复核共用
 ├── x-explore/  探索者：只报告不设计，结论必须带 file:line   beta
 ├── x-design/   架构师：≥2 方案对比 + 不建清单 + 不可逆决策 ADR
@@ -106,10 +106,12 @@ cp -r workflow-skill/x-*/ ~/.config/opencode/skills/   # 只拷 skill 目录，s
 
 | 级别 | 什么情况 | 走哪些环节 | 你要准备 |
 |---|---|---|---|
-| L0 微改 | 不改行为、不改契约、≤1 处（拼写、单行修复、纯注释格式） | 直接做，但必须贴证据 | 无 |
+| L0 微改 | 不改行为、不改契约、≤1 处（拼写、单行修复、纯注释格式） | 直接做，但必须有第二个人复核 | 定级理由 + 复核人 |
 | L1 单模块 | 1 个文件或函数内，契约不变 | build → test | 验收标准 |
 | L2 跨模块 | 改契约，或 ≥2 个模块，或上线行为变化 | explore → design → build ∥ test ∥ secure → release | 验收标准 + 边界 |
 | L3 不可逆 | 数据迁移、新服务、权限 / 计费 / 资金路径 | 全链路 + ADR + 分阶段发布 + 回滚演练 | 上面的全部 + 变更窗口 |
+
+**命中多条时按最高级**：一次改动既满足 L1（单文件）又触及 L3（资金路径），按 L3 走。**变更窗口在定级时就锁**，L2/L3 写进 `00-brief.md`，G6 只核对是否落在窗口内。
 
 定错等级的代价是对称的：L2 当 L1 做 → 上线后才发现契约被破坏；L1 当 L3 做 → 流程形式化，团队开始绕过流程。
 
@@ -194,16 +196,16 @@ python3 scripts/gate-check.py .engineering/<change-id>
 | 检查 | 拦什么 |
 |---|---|
 | 产物顺序 | 有 `02-design.md` 却没有 `01-explore.md`；有 `04-test.md` 却没有 `03-impl.md` |
-| G0 | `00-brief.md` 缺 目标 / 验收标准 / 不做什么 / 分级，或没有任何 `AC-n` 编号 |
+| G0 | 缺 目标 / 验收标准 / 不做什么 / 分级；没有 `AC-n`；`分级` 里没有 L0–L3；L2/L3 缺 `## 变更窗口`；L0 缺 `## 定级理由` 或 `## 复核人` |
 | G2 | 不建清单为空；方案对比不足 2 个；决策为空 |
 | G4 | `04-test.md` 漏掉 `00-brief.md` 里的某条 `AC-n` |
 | G6 | 回滚写成"观察一下"；信号没有任何带数值的阈值 |
 | 措辞 | 出现"基本通过""大体没问题""应该可以""差不多" |
-| `produced-by` | 产物首行不是 `produced-by: <session-id>`；`01`/`02`/`03` 用了同一个 id——「自审不算」靠这个才可验 |
+| `produced-by` | 产物首行不是 `produced-by: <session-id>`；`01`/`02`/`03` 用了同一个 id；`03`/`04` 用了同一个 id——「自审不算」靠这个才可验 |
 
 它**判不了语义**：拦不住"方案对比是凑数的"，只拦得住"根本没写"。所以它是门禁的下限，不是门禁的全部。
 
-`scripts/selftest-gate-check.sh` 用 9 个 fixture（1 个正确 + 8 个故意破坏）证明这个脚本会咬人——一个从来没失败过的检查不算检查：
+`scripts/selftest-gate-check.sh` 用 12 个 fixture（1 个正确 + 11 个故意破坏）证明这个脚本会咬人——一个从来没失败过的检查不算检查：
 
 ```bash
 bash scripts/selftest-gate-check.sh   # 期望 SELFTEST: PASS
@@ -224,9 +226,11 @@ bash scripts/selftest-gate-check.sh   # 期望 SELFTEST: PASS
 
 ## 已知的待验证项
 
-- 已做 24 次对抗探针，覆盖 `x-quality`（5）、`x-ask`（7）、`x-secure`（3）、`x-test`（1）、`x-design`（1）、`x-report`（4）、`x-release`（1）、QS-01 死代码判定（2）。`x-workflow`、`x-explore`、`x-build` 没有探针。
+- 已做 26 次对抗探针，覆盖 `x-quality`（5）、`x-ask`（7）、`x-secure`（3）、`x-test`（1）、`x-design`（1）、`x-report`（4）、`x-release`（1）、`x-workflow`（2）、QS-01 死代码判定（2）。`x-explore`、`x-build` 没有探针。
 - `x-ask` 有 7 条探针，其中 D/E 是同一 fixture 的前后对照：加「先对一次前提」后，它从「把质疑塞在 Q3」变成「第一句就顶回前提并给出替代动作」。修完终止条件后，B 里越界的两个问题（测试框架、日志落点）消失了。残留：第二轮边界仍模糊，C′ 有一个问题（429 响应体）越界。
-- 每个 skill 的 frontmatter 用 `metadata.maturity` 标证据等级：`probed` = 通过探针，`beta` = 未通过。标 `beta` 的就是 `x-workflow`、`x-explore`、`x-build`，与上一条必须一致，由 `CONSISTENCY.md` 第五节的脚本校验。
+- 每个 skill 的 frontmatter 用 `metadata.maturity` 标证据等级：`probed` = 通过探针，`beta` = 未通过。标 `beta` 的就是 `x-explore`、`x-build`，与上一条必须一致，由 `CONSISTENCY.md` 第五节的脚本校验。
+- `x-workflow` 第一次带对照组（G1 注入 / G2 不注入，同一 fixture 同一请求）：G1 第一句给出「定级 L3 + 角色链」，不写代码，把 G0 判 FAIL 并列出缺的 3 条；G2 完全没有分级环节，直接给根因和改法。**差异是「有没有分级」这条从有到无，不是程度差**。但 G2 在技术深度上不输（它自己指出 key 里该带 amount、滚动发布期新旧 key 并存仍会重复扣款）。
+- `x-workflow` 的探针只覆盖「定级 + G0 首次输出」。G1–G6 的判罚、三线并行、自审不算、变更取消，**都没有验证**。`probed` 在这里的含义比其他 skill 更窄。
 - `x-report` 第一次带对照组：A2（注入 skill）与 B2（不注入）跑同一 fixture、同一模型。B2 也做到了结论先行和影响面，但缺「残余风险 + 怎么发现它复发」，且把根因插在影响面之前；A2 四问齐全、顺序单调。**差异只值 2 个维度，n=1，不能说明条款普遍有效。** C 探针验证「何时不用」被遵守：同行评审场景没有套四问序列。
 - `x-secure` 的 E 探针第一次暴露结构缺陷：`## 结论` 被排在信任边界 / 入口清单 / 六问之后，与「结论在前」冲突。已把 `## 结论` 移到 `05-security.md` 模板首位，E2 复核通过。这是探针第一次改出真实结构问题。
 - `x-release` 的 D 探针通过：结论在前、两类信号都带数值阈值、G6 自检自己识别出「回滚缺版本号」。但 n=1，未覆盖真实 1%→100% 灰度与回滚演练，`probed` 只代表「条款被遵守」。

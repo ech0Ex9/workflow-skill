@@ -25,11 +25,12 @@ ARTIFACTS = (
 )
 
 AC_RE = re.compile(r"AC-\d+")
+GRADE_RE = re.compile(r"L([0-3])")
 HEADING_RE = re.compile(r"^##[ \t]+(.*)$")
 SEP_CELL_RE = re.compile(r":?-+:?")
 
 # 交接物头部契约（见 x-workflow「自审不算」）：每份产物首行写
-# `produced-by: <session-id>`，且 01/02/03 的 id 互不相同。
+# `produced-by: <session-id>`；01/02/03 三份 id 互不相同，04 也不得与 03 相同。
 # 行首不留空白、id 不含空白，才是可机器比对的写法。
 PRODUCED_BY_RE = re.compile(r"^produced-by:\s*(\S+)\s*$")
 
@@ -180,6 +181,14 @@ def check_produced_by(texts, present):
                             session_id
                         )
                     )
+
+    # 自己写的代码自己测 = 没测：03 与 04 不能是同一个上下文。
+    impl_id = ids.get("03-impl.md")
+    test_id = ids.get("04-test.md")
+    if impl_id is not None and test_id is not None and impl_id == test_id:
+        fails.append(
+            "FAIL PRODUCED-BY: 03/04 的 produced-by 相同（{0}）".format(impl_id)
+        )
     return fails
 
 
@@ -208,13 +217,35 @@ def check_order(present):
 
 
 def check_g0(brief):
-    """G0：brief 的四节必须齐，且至少写了一条 AC 编号。"""
+    """G0：brief 四节齐全 + AC 编号 + 分级派生出来的要求。
+
+    L2 / L3 必须在定级时就写变更窗口（G6 只核对发布是否在窗口内，不首次判定）；
+    L0 是唯一的豁免口，所以必须有定级理由和第二个人复核。
+    """
     fails = []
     for heading in ("目标", "验收标准", "不做什么", "分级"):
         if section_body(brief, heading) is None:
             fails.append("FAIL G0: 00-brief.md 缺 ## {0}".format(heading))
     if not AC_RE.search(brief):
         fails.append("FAIL G0: 00-brief.md 未出现验收标准编号 AC-<数字>")
+
+    grades = set(GRADE_RE.findall(section_body(brief, "分级") or ""))
+    if not grades:
+        fails.append("FAIL G0: 00-brief.md ## 分级 没有给出 L0–L3")
+    else:
+        if grades & {"2", "3"} and section_body(brief, "变更窗口") is None:
+            fails.append(
+                "FAIL G0: L2/L3 缺 ## 变更窗口（窗口在定级时锁，G6 只核对）"
+            )
+        if "0" in grades:
+            if section_body(brief, "定级理由") is None:
+                fails.append(
+                    "FAIL G0: L0 缺 ## 定级理由（豁免口必须说明为什么够轻）"
+                )
+            if section_body(brief, "复核人") is None:
+                fails.append(
+                    "FAIL G0: L0 缺 ## 复核人（L0 无角色，但必须有第二个人看）"
+                )
     return fails
 
 

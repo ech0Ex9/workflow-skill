@@ -2,7 +2,7 @@
 name: x-workflow
 description: Use when starting a software change bigger than a typo - new feature, cross-module change, contract change, data migration, or production release - to assign roles, gate handoffs, and decide which checks must pass before merge.
 metadata:
-  maturity: beta
+  maturity: probed
 ---
 
 # x-workflow — 多角色研发编排
@@ -27,14 +27,36 @@ metadata:
 
 | 等级 | 判定 | 角色链 |
 |---|---|---|
-| L0 微改 | 不改行为、不改契约，≤1 处 | 无角色，直接做；必须给证据 |
+| L0 微改 | 不改行为、不改契约，≤1 处（1 处 = 1 个可单独回滚的改动点） | 无角色；但必须有第二个人复核，定级理由与复核人写进 `00-brief.md` |
 | L1 单模块 | 1 个文件或函数内，契约不变 | developer → tester |
 | L2 跨模块 | 改契约，或 ≥2 个模块，或上线行为变化 | explorer → architect → developer ∥ tester ∥ security → sre |
 | L3 不可逆 | 数据迁移、新服务、权限 / 计费 / 资金路径 | 全链路 + ADR + 分阶段发布 + 回滚演练 |
 
 分级由**编排者**定，并写进 `00-brief.md`。
 
+**命中多条时按最高级。** 一次改动同时满足 L1（单文件）和 L3（资金路径），按 L3 走。挑轻的那条算，是定级错误里最常见的一种。
+
+**变更窗口在定级时就锁。** L2 / L3 的 `00-brief.md` 必须写「变更窗口」；G6 只核对发布是否落在窗口内，不再首次判定——发布当天才判窗口，等于没有。
+
+**L0 是唯一的豁免口，所以只有它额外要一道人工确认**：`00-brief.md` 写「定级理由」和「复核人」。没有复核人的 L0 不成立。
+
 定错等级的代价是对称的：L2 当 L1 做 → 上线后才发现契约被破坏；L1 当 L3 做 → 流程形式化，团队开始绕过流程。
+
+## 角色与实现
+
+角色是必须的，实现是可换的。`x-*` 是本仓库给出的实现，换环境时只换这一列。
+
+| 角色 | 本仓库实现 | 一句话职责 |
+|---|---|---|
+| 编排者 | `x-workflow` | 定级、派活、判门禁放行或打回 |
+| explorer | `x-explore` | 只报告现状，不提方案 |
+| architect | `x-design` | 选方案、定接缝、写不建清单 |
+| developer | `x-build` | 垂直切片实现 |
+| tester | `x-test` | 验收映射与边界 |
+| security | `x-secure` | 信任边界与攻击路径 |
+| sre | `x-release` | 影响面、信号、回滚 |
+
+门禁挂在**角色**上，不挂在实现上。换掉实现，门禁编号和判据一个字都不改。
 
 ## 交接物契约
 
@@ -43,12 +65,12 @@ metadata:
 | 文件 | 产出角色 | 门禁 |
 |---|---|---|
 | `00-brief.md` | 编排者 | G0 |
-| `01-explore.md` | x-explore | G1 |
-| `02-design.md` | x-design | G2 |
-| `03-impl.md` | x-build | G3 |
-| `04-test.md` | x-test | G4 |
-| `05-security.md` | x-secure | G5 |
-| `06-release.md` | x-release | G6 |
+| `01-explore.md` | explorer | G1 |
+| `02-design.md` | architect | G2 |
+| `03-impl.md` | developer | G3 |
+| `04-test.md` | tester | G4 |
+| `05-security.md` | security | G5 |
+| `06-release.md` | sre | G6 |
 
 `00-brief.md` 是唯一的需求真相。任何角色对需求的疑问，答案只能来自这里；这里没有的，回到 G0 补，不许各自发明。
 
@@ -58,15 +80,19 @@ metadata:
 
 | ID | 通过条件（全部满足） | 不通过打回 |
 |---|---|---|
-| G0 | 目标一句话；**目标有可作用的对象**；验收标准写成 Given-When-Then；**明确写出不做什么**；规模等级已定 | 编排者 |
-| G1 | 每个结论带 `文件:行 → 原文片段`；未知项标 `UNKNOWN`；给出 2–3 个可参照的既有文件 | explorer |
-| G2 | ≥2 个方案对比 + 淘汰理由；每个抽象有 ≥2 个真实消费者；有"不建清单"；不可逆决策有 ADR | architect |
+| G0 | 目标一句话；**目标有可作用的对象**；每条验收标准能写成一个**会失败的断言**（不是一句描述）；**明确写出不做什么**；规模等级已定；L2 / L3 有变更窗口；L0 有定级理由与复核人 | 编排者 |
+| G1 | 每个结论带 `文件:行 → 原文片段`；未知项标 `未验证：<缺什么>`，不许填一个看起来合理的答案 | explorer |
+| G2 | ≥2 个方案对比 + 淘汰理由；有"不建清单"；不可逆决策有 ADR | architect |
 | G3 | `x-quality` 逐条自检并附证据；项目自带检查零新增告警；与设计的偏差已记录 | developer |
 | G4 | 每条验收标准有对应用例；边界与错误路径覆盖，**数值阈值两侧都有用例**；红→绿证据；未覆盖项写明原因与风险 | tester |
 | G5 | 每条发现都有攻击路径；无路径的一律降级为 note | security |
 | G6 | 有回滚步骤且有回滚后验证；有"证明正常"与"证明异常"两类信号；变更窗口合规 | sre |
 
 门禁只有两种结果：**PASS** 或 **FAIL + 具体条目**。禁止"基本通过""建议后续优化""大体没问题"。
+
+**门禁里不许放形式判据。** 通过条件必须是"做完 / 没做完"，不是"写成了某个格式"。两个典型：验收标准不强制 Given-When-Then，而是必须能被写成一个会失败的断言；G1 也不强制"2–3 个参照文件"，那是拿不准时的建议，不是通过条件。
+
+**G2 的抽象判据就是 `x-quality` QS-02**，本表不重述。要判"这个抽象该不该存在"，去翻那一条。
 
 **G0 的第一条判据是时序**：收到实现类请求（实现 / 加功能 / 改逻辑 / 修 bug）后，第一次输出必须是分级结果 + 要走哪些角色。代码出现在它之前 = G0 未过，不管代码写得多好。
 
@@ -85,7 +111,7 @@ metadata:
 - developer 不能签 G3 —— 自己写的代码自己审，不算审。
 - 同一角色连续产出 `03` 和 `04` 时，必须由**另一个上下文**执行（新会话或子代理），否则等于没测。
 - 一个人全程既设计又实现又验收，等于没有门禁，只有一份自述。
-- 同一上下文不得连续产出 `01` / `02` / `03`。每份产物头部写 `produced-by: <session-id>`，三份的 id 必须互不相同。
+- 同一上下文不得连续产出 `01` / `02` / `03`，也不得既产出 `03` 又产出 `04`。每份产物首行写 `produced-by: <session-id>`：`01` / `02` / `03` 三份 id 互不相同，`04` 的 id 也不得与 `03` 相同。这条由 `scripts/gate-check.py` 校验。
 
 ## 并行与汇合
 
@@ -100,6 +126,18 @@ G2 通过后：
 - tester 从设计的验收标准写用例，**不等实现**
 - security 从设计的信任边界做威胁建模，**不等实现**
 - 三条线各自 FAIL 各自打回，不许"等别人先改"
+
+## 变更取消与需求变更
+
+门禁只管往前推，但"不做了"比"做完了"更常见。三种收口，不许静默消失：
+
+| 情形 | 收口动作 |
+|---|---|
+| 决定不做了 | `00-brief.md` 顶部写 `状态: 已取消` + 原因 + 日期。已产出的产物保留，不删——删了下一个人会重走一遍 |
+| 需求变了 | 不覆盖原 brief。写 `00-brief.r2.md`，从 G0 重走；旧 brief 标 `状态: 已废弃`，留在目录里 |
+| 已发布一半叫停 | 按 `06-release.md` 的回滚执行；回滚结果写回同一文件，不新开产物。回滚失败 = 事故，转事故流程，不再走门禁 |
+
+三种情形都不需要重跑门禁。已经 PASS 的门禁继续有效；作废的是变更，不是流程。
 
 ## 反模式
 
@@ -121,17 +159,20 @@ G2 通过后：
 - `04-test.md` 的用例全是 happy path → G4 不过
 - `06-release.md` 只有部署步骤没有回滚步骤 → G6 不过
 - 三个角色对同一份验收标准理解不一致 → 回到 G0 重写 brief
+- 一次改动同时命中两个等级，结论却取了轻的那个 → 定级错误，按高等级重走
 - 门禁结论开始出现"基本""大体""应该" → 门禁已失效，重新校准
 
-## 可挂载的现有资产（可选，按本机环境）
+## 可挂载的现有资产（可选）
 
-| 角色 | 可复用 |
-|---|---|
-| explorer | `explore` 子代理、`improve-codebase-architecture`、`domain-modeling` |
-| architect | `oracle` 子代理、`brainstorming` → `writing-plans`、`grill-with-docs` |
-| developer | `tdd`、`subagent-driven-development`、代码简化类子代理 |
-| tester | `tdd`、浏览器 E2E 类技能、`verification-before-completion` |
-| security | `security-research`（需 team mode）、`security-reviewer` 子代理 |
-| sre | `ship`、`finishing-a-development-branch` |
+左列是**能力要求**，右列是本机示例。换环境时只换右列，角色和门禁不动。
 
-这些是可替换的实现。角色和门禁是必须的，具体挂哪个工具不是。
+| 角色 | 需要的能力 | 本机示例 |
+|---|---|---|
+| explorer | 能读仓库，结论落到 `文件:行 → 原文` | `explore` 子代理；`domain-modeling` |
+| architect | 能给出 ≥2 个方案并互相挑战 | `oracle` 子代理；`brainstorming` → `writing-plans` |
+| developer | 能先写失败的测试再实现 | `tdd`；`subagent-driven-development` |
+| tester | 能跑真实命令并贴出输出 | `verification-before-completion` |
+| security | 能做可达性分析与攻击路径，不对线上做破坏性验证 | `security-research`（需 team mode）；`security-reviewer` |
+| sre | 能做分阶段发布与回滚演练 | `ship`；`finishing-a-development-branch` |
+
+右列是示例，不是清单。角色和门禁是必须的，具体挂哪个工具不是。

@@ -52,7 +52,9 @@
 |---|---|
 | 证据格式 | 全部 skill 文件；`x-quality` 的「禁止三种写法」；README 设计取舍 |
 | 结论优先 | 全部 skill 文件（`x-explore` / `x-secure` / `x-release` 有具体落点） |
-| 门禁 ID 或条件 | `x-workflow` 门禁表 + 6 个角色各自的「门禁 Gx」节 + README 链路图 |
+| 门禁 ID 或条件 | `x-workflow` 门禁表 + 6 个角色各自的「门禁 Gx」节 + `scripts/gate-check.py` 的对应检查 + `scripts/selftest-gate-check.sh` 的 fixture + README「门禁可执行检查」表 |
+| 分级判据（L0–L3） | `x-workflow` 分级表 + `scripts/gate-check.py` 的 G0 检查 + `scripts/selftest-gate-check.sh` fixture + README 分级表 |
+| 角色与实现的对应 | `x-workflow`「角色与实现」+ 交接物契约表 + README 结构树 |
 | 产物名或数量 | `x-workflow` 契约表 + 各角色「输入 / 输出」+ README 产物树 + 实际 `.engineering/` 目录 |
 | QS 编号或条数 | `x-quality` 规则 + `x-build` 硬约束 + `x-workflow` G3 + `x-quality` 复核示例 + README 结构行 |
 | skill 改名 | 目录名 + frontmatter `name` + 全仓库交叉引用 + README 树 + 第二节依赖矩阵 |
